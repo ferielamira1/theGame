@@ -63,6 +63,7 @@ class Player(object):
             except ValueError:
                 print("This is not a number. Please enter a valid number")
 
+
     def getHand(self):
         return self.hand
 
