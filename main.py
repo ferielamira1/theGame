@@ -36,7 +36,7 @@ if __name__ == '__main__':
 
 
 
-    gameOver = True
+    gameOver = False
 
     print("*****************************************************")
     print("******************THE GAME STARTED*******************")
@@ -49,9 +49,7 @@ if __name__ == '__main__':
         mustPlay = True
         stillPlaying=True
         numberLayedCards=0
-        player.hand = [80,81,82,83,84,85,86,87]
-        deck.upwardPile = [90,92]
-        deck.downwardPile = [40,30]
+
 
 
 
@@ -62,7 +60,7 @@ if __name__ == '__main__':
 
 
             print("The next player is {} \n".format(player.name))
-            player.showHand()
+
 
 
 
@@ -75,27 +73,32 @@ if __name__ == '__main__':
                         numberLayedCards < 1 and len(deck.cards) == 0)):
                     mustPlay = False
 
-                if mustPlay and (all((card > deck.downwardPile[0] or card > deck.downwardPile[1] or
-                                     card < deck.upwardPile[0] or card < deck.upwardPile[1]) or
-                                     card != deck.downwardPile[0] +10  or card != deck.downwardPile[1] +10
-                                     or card != deck.upwardPile[0] -10 or card != deck.upwardPile[1] -10 for card in player.hand)):
 
+                if (mustPlay and (all( (card > deck.downwardPile[0]for card in player.hand))
+                                  and all(card > deck.downwardPile[1] for card in player.hand)
+                                  and all(card < deck.upwardPile[0] for card in player.hand)
+                                  and all(card < deck.upwardPile[1] for card in player.hand)
+                                  and all(card != deck.downwardPile[0] +10 for card in player.hand)
+                                  and all(card != deck.downwardPile[1] +10 for card in player.hand)
+                                  and all(card != deck.upwardPile[0] -10 for card in player.hand)
+                                  and all(card != deck.upwardPile[1] -10 for card in player.hand))):
                     gameOver = True
                     break
 
                 try:
+                    player.showHand()
                     card = int(input("The stacked cards are currently in this state: \n Going UPWARDS: \n "
                               "1) \u2191 {} \n 2) \u2191 {} \n "
                               "Going DOWNWARDS: \n"
                               "3) \u2193 {} \n 4) \u2193 {} \n".format(deck.upwardPile[0],deck.upwardPile[1],deck.downwardPile[0],deck.downwardPile[1])
                               + "Enter the card to play: \n"))
+
                     if not (card in player.getHand()):
                         print("The card is  not in your hand.Please enter a valid card \n")
-                    else:
                         break
+
                 except ValueError:
                     print("This is not a number. Please enter a valid number")
-
 
 
                 result =  player.play(deck,card)
@@ -109,7 +112,8 @@ if __name__ == '__main__':
 
                 if numberPlayers == 1 :
                     drawnCard = player.drawCard(deck)
-                    print("You've drawn the card {}".format(drawnCard))
+                    print("You've drawn the card {} \n".format(drawnCard))
+
 
                 elif numberLayedCards>=2 :
                     while True:

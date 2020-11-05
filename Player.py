@@ -34,8 +34,10 @@ class Player(object):
 
     def play(self,deck,card):
 
+
         #on which pile ?
         while(True):
+
             try:
                 pileNumber = int(input("On which pile of cards would you like to play?  \n"))
 
@@ -50,7 +52,7 @@ class Player(object):
 
                 if(pileNumber == 3 or pileNumber ==4):
                     # DOWNWARDS
-                    if (card < deck.downwardPile[pileNumber-3] or (card == deck.upwardPile[pileNumber-1] + 10 )):
+                    if (card < deck.downwardPile[pileNumber-3] or (card == deck.upwardPile[pileNumber-3] + 10 )):
 
                         deck.downwardPile[pileNumber-3] = card
                         self.hand.remove(card)
