@@ -46,46 +46,61 @@ if __name__ == '__main__':
 
 
     for player in players:
-
+        mustPlay = True
         stillPlaying=True
         numberLayedCards=0
-
-        if any( (card < deck.downwardPile[0] or card < deck.downwardPile[1]  or
-                  card > deck.upwardPile[0] or card > deck.upwardPile[1]) for card in player.hand ):
-
-
+        player.hand = [80,81,82,83,84,85,86,87]
+        deck.upwardPile = [90,92]
+        deck.downwardPile = [40,30]
 
 
-            while(gameOver == False
-                  and(stillPlaying == True)
-                  or (numberLayedCards<2 and len(deck.cards)>0)
-                  or (numberLayedCards < 1 and len(deck.cards)==0)):
 
-                print("The next player is {} \n".format(player.name))
-                player.showHand()
+        while(gameOver == False
+              and(stillPlaying == True
+              or mustPlay == True)):
 
 
-                #check if hand contains a card that is smaller than downwards  or bigger than  upwards
 
-                while(True):
-                    try:
-                        card = int(input("The stacked cards are currently in this state: \n Going UPWARDS: \n "
-                                  "1) \u2191 {} \n 2) \u2191 {} \n "
-                                  "Going DOWNWARDS: \n"
-                                  "3) \u2193 {} \n 4) \u2193 {} \n".format(deck.upwardPile[0],deck.upwardPile[1],deck.downwardPile[0],deck.downwardPile[1])
-                                  + "Enter the card to play: \n"))
-                        if not (card in player.getHand()):
-                            print("The card is  not in your hand.Please enter a valid card \n")
-                        else:
-                            break
-                    except ValueError:
-                        print("This is not a number. Please enter a valid number")
+            print("The next player is {} \n".format(player.name))
+            player.showHand()
+
+
+
+
+            #check if hand contains a card that is smaller than downwards  or bigger than  upwards
+
+            while(True):
+
+                if (not (numberLayedCards < 2 and len(deck.cards) > 0) or (
+                        numberLayedCards < 1 and len(deck.cards) == 0)):
+                    mustPlay = False
+
+                if mustPlay and (all((card > deck.downwardPile[0] or card > deck.downwardPile[1] or
+                                     card < deck.upwardPile[0] or card < deck.upwardPile[1]) or
+                                     card != deck.downwardPile[0] +10  or card != deck.downwardPile[1] +10
+                                     or card != deck.upwardPile[0] -10 or card != deck.upwardPile[1] -10 for card in player.hand)):
+
+                    gameOver = True
+                    break
+
+                try:
+                    card = int(input("The stacked cards are currently in this state: \n Going UPWARDS: \n "
+                              "1) \u2191 {} \n 2) \u2191 {} \n "
+                              "Going DOWNWARDS: \n"
+                              "3) \u2193 {} \n 4) \u2193 {} \n".format(deck.upwardPile[0],deck.upwardPile[1],deck.downwardPile[0],deck.downwardPile[1])
+                              + "Enter the card to play: \n"))
+                    if not (card in player.getHand()):
+                        print("The card is  not in your hand.Please enter a valid card \n")
+                    else:
+                        break
+                except ValueError:
+                    print("This is not a number. Please enter a valid number")
 
 
 
                 result =  player.play(deck,card)
                 numberLayedCards+=1
-                # what happens in case the player cant  place ANY card on any of the piles ?
+
 
                 if (player.emptyHand()==True):
                     gameOver == True
@@ -110,9 +125,21 @@ if __name__ == '__main__':
 
                         except ValueError:
                             print("This is not a number. Please enter a valid number")
-        else:
-            print("You lost The Game.")
-            break
+
+
+    totalCards = 0
+    for player in players:
+        totalCards += len(player.hand)
+
+
+    if totalCards + len(deck.cards) <=10:
+
+        print("CONGRATULATIONS,YOU HAVE AN EXCELLENT SCORE!")
+    else:
+        print("YOU DIED")
+
+
+
 
 
 
