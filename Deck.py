@@ -34,7 +34,55 @@ class Deck(object):
 
 
 
+    def computeDistance(self,pCards):
+        smallest = [100, 100,0,0]
 
+        for index, pile in enumerate(self.upwardPile):
+
+            for card in pCards:
+                if card > pile :
+                    current = card
+                    if current < smallest[index] :
+                        smallest[index] = current
+
+
+        for index, pile in enumerate(self.downwardPile):
+            for card in pCards:
+                if card < pile :
+                    current = card
+                    if current > smallest[2+index] :
+                        smallest[2+index] = current
+
+
+        distances = [smallest[0] - self.upwardPile[0],
+                     smallest[1] - self.upwardPile[1],
+                     self.downwardPile[0] - smallest[2],
+                     self.downwardPile[1] - smallest[3]]
+
+        indexCard  = distances.index(min(distances))
+        if indexCard < 2:
+            return smallest[indexCard],self.upwardPile[indexCard]
+
+        else:
+            return smallest[indexCard], self.upwardPile[indexCard-2 ]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class Card(object):
+    def __init__(self):
+        self.number = 0
+        self.dis
 
 
 

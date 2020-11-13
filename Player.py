@@ -1,3 +1,5 @@
+import math
+
 class Player(object):
     def __init__(self,name):
         self.name = name
@@ -32,38 +34,61 @@ class Player(object):
     def emptyHand(self):
         return True if len(self.hand)==0 else False
 
-    def play(self,deck,card):
+    #returns True if player was able to play
+    #returns false otherwise
+    def play(self,deck,pCards):
+            smallest = [math.inf, math.inf, 0, 0]
+
+            for index, pile in enumerate(deck.upwardPile):
+                for card in pCards:
+                    if card > pile:
+                        current = card
+                        if current < smallest[index]:
+                            smallest[index] = current
 
 
-        #on which pile ?
-        while(True):
 
-            try:
-                pileNumber = int(input("On which pile of cards would you like to play?  \n"))
+            for index, pile in enumerate(deck.downwardPile):
+                for card in pCards:
+                    if card < pile:
+                        current = card
 
-                if(pileNumber == 1 or pileNumber ==2):
-                    #UPWARDS
-                    if(card > deck.upwardPile[pileNumber-1] or (card == deck.upwardPile[pileNumber-1] - 10 )):
-                        deck.upwardPile[pileNumber-1]=card
-                        self.hand.remove(card)
-                        break
-                    else:
-                        print("The handed card is smaller than the top of the stack")
+                        if current > smallest[2 + index]:
+                            smallest[2 + index] = current
 
-                if(pileNumber == 3 or pileNumber ==4):
-                    # DOWNWARDS
-                    if (card < deck.downwardPile[pileNumber-3] or (card == deck.upwardPile[pileNumber-3] + 10 )):
+            if (smallest == [math.inf, math.inf, 0, 0]):
+                return False
 
-                        deck.downwardPile[pileNumber-3] = card
-                        self.hand.remove(card)
-                        break
-                    else:
-                        print("The handed card is bigger than the top of the stack")
+            else:
+                for i,s in enumerate(smallest):
+                    if s == 0:
+                        smallest[i] = math.inf
+
+
+                distances = [smallest[0] - deck.upwardPile[0],
+                             smallest[1] - deck.upwardPile[1],
+                             abs(deck.downwardPile[0] - smallest[2]),
+                             abs(deck.downwardPile[1] - smallest[3])]
+
+
+                indexCard = distances.index(min(distances))
+
+
+
+                if indexCard < 2:
+
+                    deck.upwardPile[indexCard] = smallest[indexCard]
+
+                    self.hand.remove(smallest[indexCard])
 
                 else:
-                    print("The number must lay between 1-4. Please enter a valid number ")
-            except ValueError:
-                print("This is not a number. Please enter a valid number")
+                    deck.downwardPile[indexCard -2] = smallest[indexCard]
+
+                    self.hand.remove(smallest[indexCard])
+                return True
+
+
+
 
 
     def getHand(self):
