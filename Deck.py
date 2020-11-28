@@ -7,6 +7,7 @@ class Deck(object):
         self.cards= []
         self.build()
 
+
     def build(self):
 
         self.upwardPile=[1,1]
