@@ -1,78 +1,69 @@
 from keras.optimizers import Adam
 from keras.models import Sequential
-from keras.layers.core import Dense, Dropout
+from keras.layers import Dense
+from keras.callbacks import ReduceLROnPlateau
+from keras.callbacks import EarlyStopping
+
 import random
 import numpy as np
-import statistics
 import collections
-
-
-params = dict()
-# Neural Network
-params['epsilon_decay_linear'] = 1/75
-params['learning_rate'] = 0.0005
-params['first_layer_size'] = 50   # neurons in the first layer
-params['second_layer_size'] = 300   # neurons in the second layer
-params['third_layer_size'] = 50    # neurons in the third layer
-params['episodes'] = 150
-params['memory_size'] = 2500
-params['batch_size'] = 1000
-# Settings
-params['weights_path'] = 'weights/weights3.hdf5'
-params['load_weights'] = False
-params['train'] = True
-params['plot_score'] = True
 
 # In our case player
 class DQNAgent(object):
     def __init__(self):
-        self.reward = 0
-        self.gamma = 0.9 # WHY 0.9
-        #self.dataframe = pd.DataFrame()
+        self.epsilon_decay= 0.995
+        self.state_size = 12
+        self.action_size = 32
+        self.gamma = 0.99 # Adjusting the value of gamma will diminish (bigger gamma) or increase (smaller gamma)the contribution of future rewards.
+        self.train = True
         self.short_memory = np.array([])
-        self.agent_target = 1 # ?
-        self.agent_predict = 0 # ?
-        self.learning_rate = params['learning_rate']
+        self.learning_rate = 0.0001#(lower bound 10^-6)
         self.epsilon = 1
         self.actual = [] # ?
-
-
-        self.first_layer = params['first_layer_size']
-        self.second_layer = params['second_layer_size']
-        self.third_layer = params['third_layer_size']
-
-        self.memory = collections.deque(maxlen=params['memory_size'])
-        self.weights = params['weights_path'] # ?
-        self.load_weights = params['load_weights'] # ?
+        self.second_layer = 20
+        self.memory = collections.deque(maxlen=2000)
+        self.weights = 'weights/weights.hdf5'
+        self.load_weights = False
         self.model = self.network()
+        self.batch_size = 32
 
     def network(self):
         model = Sequential()
-        model.add(Dense(self.first_layer, activation='relu'))
-        model.add(Dense(self.second_layer, activation='relu'))
-        model.add(Dense(self.third_layer, activation='relu'))
-        model.add(Dense(4, activation='softmax'))
-        opt = Adam(self.learning_rate)
-        model.compile(loss='mse', optimizer=opt)
+
+        model.add(Dense(12,input_dim=12, activation='relu',name="layer1")) #Here, the input layer would expect a one-dimensional array with 12 elements for input. It would produce 12 outputs in return.
+        model.add(Dense(24 ,activation='tanh',name="layer2"))
+        model.add(Dense(self.action_size, activation='softmax',name="layer3"))
+        model.compile(loss='mse', optimizer=Adam(self.learning_rate))
+
         return model
 
-    def get_state(self,hand, upPile1, upPile2, downPile1, downPile2):
-        state = np.zeros((1, len(hand) + 4))
-        state[0][:len(hand)] = hand
-        state[0][len(hand)] = upPile1
-        state[0][len(hand) + 1] = upPile2
-        state[0][len(hand) + 2] = downPile1
-        state[0][len(hand) + 3] = downPile2
-        state= state.flatten()
+
+    def encode_state(self,hand,upPiles,downPiles):
+        '''
+        # Hot encoding of the cards in hand:
+
+        state = np.zeros((102))
+        for index in hand:
+            if index != -1:
+                state[index] = 1
+
+        state[98] = upPiles[0]
+        state[99] = upPiles[1]
+        state[100] = downPiles[0]
+        state[101] = downPiles[1]
+        '''
+
+        state = np.zeros(8+4)
+        sorted_hand= np.sort(hand)
+
+        state[:8]= sorted_hand
+
+        state[8:10] = upPiles
+        state[10:12] = downPiles
+        print(state)
+        state = state.flatten()
         return state
 
-    def set_reward(self, played):
-        self.reward = 0
-        if played:
-            self.reward = 1
-        if not played:
-            self.reward = -1
-        return self.reward
 
     def remember(self, state, action, reward, next_state, done):
         self.memory.append((state, action, reward, next_state, done))
@@ -84,19 +75,30 @@ class DQNAgent(object):
             minibatch = memory
         for state, action, reward, next_state, done in minibatch:
             target = reward
-
             if not done:
-                target = reward + self.gamma * np.amax(self.model.predict(next_state))
-            target_f = self.model.predict(state)
-            target_f[0][np.argmax(action)] = target
-            self.model.fit(state, target_f, epochs=1, verbose=0)
+                target = reward + self.gamma * np.amax(self.model.predict(np.array([next_state]))[0])
+            target_f = self.model.predict(np.array([state]))
+            target_f[0][action] = target
+
+            reduce_lr = ReduceLROnPlateau(monitor='loss', factor=0.2,
+                                          patience=5, min_lr=0.001)
+
+
+            self.model.fit(np.array([state]), target_f, epochs=1, verbose=0,callbacks=[reduce_lr])
+
 
     def train_short_memory(self, state, action, reward, next_state, done):
         target = reward
         if not done:
-            target = reward + self.gamma * np.amax(self.model.predict(next_state))
-        target_f = self.model.predict(state)
+           target = reward + self.gamma * np.amax(self.model.predict(next_state.reshape((1, 12)))[0])
 
-        target_f[0][np.argmax(action)] = target
+        target_f = self.model.predict(state.reshape((1,12)))
 
-        self.model.fit(state, target_f, epochs=1, verbose=0)
+        target_f[0][action] = target
+        print("TARGET_F {}".format(target_f))
+        self.model.fit(state.reshape((1, 12)), target_f, epochs=1, verbose=0)
+        return
+
+
+
+

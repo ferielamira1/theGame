@@ -1,153 +1,113 @@
 import math
 
+import numpy as np
 class Player(object):
     def __init__(self,name):
         self.name = name
         self.hand=[]
+    #
+    # def action(self, deck, move):
+    #     """
+    #     :param deck: Class, containing the piles and remainig cards in the deck
+    #     :param move: Integer representing the chosen move
+    #                 move in 0-3]: play card 0 on deck
+    #     :return: True if game is over, else False
+    #     """
+    #
+    #     if move == 32:
+    #         return False
+    #
+    #     card_index = int(move / 4)
+    #     pile = move % 4
+    #
+    #     card = self.hand[card_index]
+    #
+    #     if pile == 0 or pile == 1:
+    #         if ((card > deck.upwardPile[pile][len(deck.upwardPile[pile])-1]) or (card == deck.upwardPile[pile][len(deck.upwardPile[pile])-1] - 10)) and card != -1:
+    #             old_pile = deck.upwardPile[pile][len(deck.upwardPile[pile])-1]
+    #             deck.upwardPile[pile].append(card)
+    #
+    #
+    #             if deck.is_deck_empty():
+    #                 self.hand[card_index] = -1
+    #             else:
+    #                 self.hand[card_index] = self.draw_card(deck)
+    #             print("Successfully played card {}".format(card))
+    #
+    #             return True
+    #
+    #         else:
+    #             print("Could not play card")
+    #             return False
+    #
+    #     if pile == 2 or pile == 3:
+    #         if ((card < deck.downwardPile[pile - 2][len(deck.downwardPile[pile-2])-1]) or (card == deck.downwardPile[pile - 2][len(deck.downwardPile[pile-2])-1] + 10)) and card != -1:
+    #
+    #             old_pile = deck.downwardPile[pile - 2][len(deck.downwardPile[pile-2])-1]
+    #             deck.downwardPile[pile - 2].append(card)
+    #             if deck.is_deck_empty():
+    #                 self.hand[card_index] = -1
+    #             else:
+    #                 self.hand[card_index] = self.draw_card(deck)
+    #
+    #             print("Successfully played card {}".format(card))
+    #
+    #             return True
+    #
+    #         else:
+    #             print("Could not play card")
+    #             return False
 
-
-
-
-    def action(self,deck,pCards, choices):
-
-        for index,c in enumerate(choices):
-            if c == 1:
-                choice=index
-
-        # we can set choice randomly
-        print("CHOICE {}".format(choice))
-        if (choice == 0 or  choice == 1) :
-
-            smallest = math.inf
-
-            # play card on upDeck1
-            for card in pCards:
-                if card > deck.upwardPile[choice]:
-                    current = card
-                    if current < smallest:
-                        smallest = current
-
-            if (smallest == math.inf):
-                print("Could not play card")
-                return False
-
-            else :
-                deck.upwardPile[choice] = smallest
-                self.hand.remove(smallest)
-                if not deck.isDeckEmpty():
-                    self.drawCard(deck)
-                print("Successfully played card")
-                return True
-
-        if choice == 2 or choice == 3:
-            smallest = 0
-
-            for card in pCards:
-                if card < deck.downwardPile[choice-2]:
-                    current = card
-
-                    if current > smallest:
-                        smallest= current
-
-            if (smallest == 0):
-                print("Could not play card")
-                return False
-            else :
-                deck.downwardPile[choice-2] = smallest
-
-                self.hand.remove(smallest)
-                if not deck.isDeckEmpty():
-
-                    self.drawCard(deck)
-
-                print("Successfully played card")
-
-                return True
-
-
-
-
-    def drawHand(self,deck,numberPlayers):
+    def draw_hand(self, deck, numberPlayers):
         if numberPlayers in range(3,6):
             for i in range(1,7):
-                self.hand.append(deck.drawCard())
+                self.hand.append(deck.draw_card())
 
-        if (numberPlayers==2):
+
+        if numberPlayers==2:
             for i in range(1,8):
-                self.hand.append(deck.drawCard())
+                self.hand.append(deck.draw_card())
 
-        if (numberPlayers==1):
+        if numberPlayers==1:
             for i in range(1,9):
-                self.hand.append(deck.drawCard())
+                self.hand.append(deck.draw_card())
         return self
 
-    def drawCard(self,deck):
-        if not deck.isDeckEmpty():
-            card = deck.drawCard()
-            self.hand.append(card)
+    def draw_card(self, deck):
+        if not deck.is_deck_empty():
+            card = deck.draw_card()
         return card
 
-    def showHand(self):
+    def show_hand(self):
         print("Player {} has hand: ".format(self.name))
         for card in self.hand:
             print("{} ".format(card),end="")
 
         print("\n")
 
-    def emptyHand(self):
+    def empty_hand(self):
         return True if len(self.hand)==0 else False
 
-    #returns True if player was able to play
-    #returns false otherwise
 
-
-    def play(self,deck,pCards):
-            smallest = [math.inf, math.inf, 0, 0]
-
-            for index, pile in enumerate(deck.upwardPile):
-                for card in pCards:
-                    if card > pile:
-                        current = card
-                        if current < smallest[index]:
-                            smallest[index] = current
-
-
-
-            for index, pile in enumerate(deck.downwardPile):
-                for card in pCards:
-                    if card < pile:
-                        current = card
-
-                        if current > smallest[2 + index]:
-                            smallest[2 + index] = current
-
-            if (smallest == [math.inf, math.inf, 0, 0]):
-                return False
-
-            else:
-                for i,s in enumerate(smallest):
-                    if s == 0:
-                        smallest[i] = math.inf
-                distances = [smallest[0] - deck.upwardPile[0],
-                             smallest[1] - deck.upwardPile[1],
-                             abs(deck.downwardPile[0] - smallest[2]),
-                             abs(deck.downwardPile[1] - smallest[3])]
-
-                indexCard = distances.index(min(distances))
-
-                if indexCard < 2:
-
-                    deck.upwardPile[indexCard] = smallest[indexCard]
-
-                    self.hand.remove(smallest[indexCard])
-
-                else:
-                    deck.downwardPile[indexCard -2] = smallest[indexCard]
-
-                    self.hand.remove(smallest[indexCard])
-                return True
-
-
-    def getHand(self):
+    def get_hand(self):
         return self.hand
+
+    def can_play(self,deck):
+        hand = []
+        for card in self.hand:
+            if card != -1:
+                hand.append(card)
+        hand = np.array(hand)
+        if len(hand)!= 0:
+            if (hand > deck.upwardPile[0][len(deck.upwardPile[0])-1]).any() or (hand > deck.upwardPile[1][len(deck.upwardPile[1])-1]).any() or (
+                    hand == deck.upwardPile[0][len(deck.upwardPile[0])-1] - 10).any() or (hand == deck.upwardPile[1][len(deck.upwardPile[1])-1] - 10).any() or (
+                    hand < deck.downwardPile[0][len(deck.downwardPile[0])-1]).any() or (hand < deck.downwardPile[1][len(deck.downwardPile[1])-1]).any() or (
+                    hand == deck.downwardPile[0][len(deck.downwardPile[0])-1] + 10).any() or (
+                    hand == deck.downwardPile[1][len(deck.downwardPile[1])-1] + 10).any():
+                return True
+            else:
+                return False
+        else:
+            return False
+
 
