@@ -7,6 +7,10 @@ import os
 import matplotlib.pyplot as plt
 
 
+def plot_pass_action():
+
+
+
 
 def plot_communication():
     t_ideal = []

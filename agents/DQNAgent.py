@@ -43,7 +43,7 @@ class DQNAgent(object):
                  epsilon_decay_steps=20000,
                  batch_size=32,
                  number_actions=400,
-                 state_shape=[5,100],
+                 state_shape= None,
                  train_every=1,
                  mlp_layers=None,
                  learning_rate=0.00005):
@@ -73,7 +73,6 @@ class DQNAgent(object):
             mlp_layers (list): The layer number and the dimension of each layer in MLP
             learning_rate (float): The learning rate of the DQN agent.
         '''
-        self.use_raw = False
         self.sess = sess
         self.scope = scope
         self.replay_memory_init_size = replay_memory_init_size
@@ -95,6 +94,7 @@ class DQNAgent(object):
         # Create estimators
         self.q_estimator = Estimator(scope=self.scope+"_q", number_actions=number_actions, learning_rate=learning_rate, state_shape=state_shape, mlp_layers=mlp_layers)
         self.target_estimator = Estimator(scope=self.scope+"_target_q", number_actions=number_actions, learning_rate=learning_rate, state_shape=state_shape, mlp_layers=mlp_layers)
+
 
         # Create replay memory
         self.memory = Memory(replay_memory_size, batch_size)
@@ -122,9 +122,8 @@ class DQNAgent(object):
         Returns:
             action (int): an action id
         '''
-
         A = self.predict(state)
-        A = remove_ilxlegal(A, legal_actions)
+        A = remove_illegal(A, legal_actions)
         action = np.random.choice(np.arange(len(A)), p=A)
         return action
 
@@ -173,13 +172,13 @@ class DQNAgent(object):
         # Perform gradient descent update
         state_batch = np.array(state_batch)
         loss = self.q_estimator.update(self.sess, state_batch, action_batch, target_batch)
-        print('\rINFO - Agent {}, step {}, rl-loss: {}'.format(self.scope, self.total_t, loss), end='')
+        #print('\rINFO - Agent {}, step {}, rl-loss: {}'.format(self.scope, self.total_t, loss), end='')
 
 
         # Update the target estimator
         if self.train_t % self.update_target_estimator_every == 0:
             copy_model_parameters(self.sess, self.q_estimator, self.target_estimator)
-            print("\nINFO - Copied model parameters to target network.")
+            #print("\nINFO - Copied model parameters to target network.")
 
         self.train_t += 1
 
@@ -211,7 +210,7 @@ class Estimator():
         This network is used for both the Q-Network and the Target Network.
     '''
 
-    def __init__(self, scope="estimator", number_actions=33, learning_rate=0.001, state_shape=(5,100), mlp_layers=None):
+    def __init__(self, scope, number_actions, learning_rate, state_shape, mlp_layers):
         ''' Initilalize an Estimator object.
         Args:
             number_actions (int): the number output actions
@@ -231,11 +230,13 @@ class Estimator():
         self.optimizer = tf.compat.v1.train.AdamOptimizer(learning_rate=self.learning_rate, name='dqn_adam')
 
         with tf.control_dependencies(update_ops):
-            self.train_op = self.optimizer.minimize(self.loss, global_step=tf.contrib.framework.get_global_step())
+            self.train_op = self.optimizer.minimize(self.loss, global_step=tf.compat.v1.train.get_global_step())
 
 
     def _build_model(self):
         ''' Build an MLP model.
+
+        TODO: check how self.mlp_layers is iterated on in line 258
         '''
         # Placeholders for our input
         input_shape = [None]
@@ -252,11 +253,11 @@ class Estimator():
 
         # Batch Normalization
         X = tf.compat.v1.layers.batch_normalization(self.X_pl, training=self.is_train)
-
         # Fully connected layers
         fc = tf.compat.v1.layers.flatten(X)
         for dim in self.mlp_layers:
             fc = tf.contrib.layers.fully_connected(fc, dim, activation_fn=tf.tanh)
+
         self.predictions = tf.contrib.layers.fully_connected(fc, self.number_actions, activation_fn=None)
 
         # Get the predictions for the chosen actions only
@@ -354,7 +355,7 @@ def copy_model_parameters(sess, estimator1, estimator2):
 
     sess.run(update_ops)
 
-#if __name__ == "__main__":
+#if __name__ == "__main__":ggloba
 #    with tf.Session() as sess:
 #        agent = DQNAgent(sess,
 #                         scope='dqn',

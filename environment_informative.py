@@ -117,6 +117,9 @@ class Env(object):
                         player.num_played_cards = player.num_played_cards - 1
             next_player = self.players[(player.id + 1) % len(self.players)]
 
+            #if player.num_played_cards <=2:
+            #    score = 1
+
 
             next_obs = {"player": next_player, "deck": deck, "others": np.delete(self.players,next_player.id)}
 
@@ -124,6 +127,7 @@ class Env(object):
             #print("PLAYER {} DID MOVE {}".format(player.id, action))
 
             #print(self.obs)
+
             return self._extract_state(next_obs), next_player.id, score
 
 
@@ -135,17 +139,29 @@ class Env(object):
             if ((card > deck.upwardPile[pile][len(deck.upwardPile[pile]) - 1]) or (
                     card == deck.upwardPile[pile][len(deck.upwardPile[pile]) - 1] - 10)) and card != -1:
 
+                #if (card == deck.upwardPile[pile][len(deck.upwardPile[pile]) - 1] - 10):
+                #    score = 1
+                #else:
+                #    score = 1 / abs(card - deck.upwardPile[pile][len(deck.upwardPile[pile]) - 1])
+                score=1
                 deck.upwardPile[pile].append(card)
                 player.hand[player.hand.index(card)] = -1
-                score += 1
+
+
+
 
         if pile == 2 or pile == 3:
             if ((card < deck.downwardPile[pile - 2][len(deck.downwardPile[pile - 2]) - 1]) or (
                     card == deck.downwardPile[pile - 2][len(deck.downwardPile[pile - 2]) - 1] + 10)) and card != -1:
-
+                #if card == deck.downwardPile[pile - 2][len(deck.downwardPile[pile - 2]) - 1] + 10:
+                #    score = 1
+                #else:
+                #    score = 1 / abs(card - deck.downwardPile[pile - 2][len(deck.downwardPile[pile - 2])- 1])
+                score=1
                 deck.downwardPile[pile - 2].append(card)
                 player.hand[player.hand.index(card)] = -1
-                score += 1
+
+
 
         next_obs = {"player": player, "deck": deck, "others":[p for p in self.players if p != player] }
 
@@ -175,7 +191,6 @@ class Env(object):
             upile2 = deck.upwardPile[1]
             dpile1 = deck.downwardPile[0]
             dpile2 =deck.downwardPile[0]
-1   1
             hints=[]
 
             if any(abs(c - upile1[len(upile1) - 1]) == 1 or upile1[len(upile1) - 1] - c == 10  for c in p.hand):
@@ -213,13 +228,12 @@ class Env(object):
         score = 0
         while not self.is_over():
             # Agent plays
-            coplayers = np.delete(self.players,self.current_player.id)
-            hints= self.get_hints(coplayers)
+            if self.player_num>1:
+                coplayers = np.delete(self.players,self.current_player.id)
+                hints= self.get_hints(coplayers)
 
-            #TODO: change state, to contain hints
-
-            for h in hints:
-                state[h][0]=1
+                for h in hints:
+                    state[h][0]=1
 
 
             '''STATE: 
@@ -252,6 +266,7 @@ class Env(object):
             # Save action
             trajectories[player_id].append(action)
 
+
             # Set the state and player
             state = next_state
             player_id = next_player_id
@@ -270,6 +285,8 @@ class Env(object):
 
         # Reorganize the trajectories
         trajectories = reorganize(trajectories, payoffs)
+
+
 
         return trajectories, payoffs
 
@@ -315,9 +332,16 @@ class Env(object):
         if len(self.obs["deck"].cards) > 49:
 
             payoffs = np.array([(score / 98)-1 for i in range(self.player_num)])
+            
         '''
-        if self.obs["deck"].is_deck_empty() and len(self.obs["player"].hand) == 0:
+
+        num_handcards=0
+        for p in self.players:
+            num_handcards+=len(p.hand)
+
+        if len(self.obs["deck"].cards)+num_handcards < 10:
             payoffs = np.array([1.0 for i in range(self.player_num)])
+
 
         else:
             payoffs = np.array([score / 98 for i in range(self.player_num)])
@@ -378,7 +402,7 @@ class Env(object):
         self.obs = state
 
         if self.record_action:
-            self.action_recorder = []
+            self.action_recorder=[]
         return self._extract_state(self.obs), self.current_player.id
 
     def _extract_state(self, obs):

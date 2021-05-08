@@ -53,6 +53,7 @@ class Env(object):
         self.player_num = config['player_num']
         self.state_shape = config['state_shape']
         self.number_actions = config['number_actions']
+        self.strategy=config['strategy']
         self.current_state = {}
         self.agents: [DQNAgent]
         if self.record_action:
@@ -84,12 +85,12 @@ class Env(object):
         score = 0
 
         if action == 0:
-            ##print("PLAYER {} DID MOVE {}".format(player.id, action))
 
             while player.num_played_cards!=0 and not deck.is_deck_empty():
-
-                player.hand[player.hand.index(-1)] = player.draw_card(deck)
-                player.num_played_cards = player.num_played_cards - 1
+                for i in range(len(player.hand)):
+                    if player.hand[i]== -1:
+                        player.hand[i] = player.draw_card(deck)
+                        player.num_played_cards = player.num_played_cards - 1
             next_player = self.players[(player.id + 1) % len(self.players)]
 
             if self.state_shape == [5, 100]:
@@ -98,13 +99,25 @@ class Env(object):
                 next_state = {"player": next_player, "deck": deck, "others": [p for p in self.players if p != next_player]}
 
             self.current_state = next_state
+            #print("PLAYER {} DID MOVE {}".format(player.id, action))
 
             #print(self.current_state)
             return self._extract_state(next_state), next_player.id, score
 
 
-        card = int(action / 4)
-        pile = action % 4
+        card = int(action % 100)
+
+        pile= int(action/100)
+
+
+        ''' 
+        ACTION:
+            0: pass, 		1:?, 		2->98: play card x on upward deck 1  		99: hint 1 
+            100: ?, 		101:?,	    102->198:  upward deck 2  			    199: hint 2
+            200: ?,		    201:?,	    202-> 298: down1  					    299: hint 3 
+            300: ?,		    301:?,	    302->398: down2 					    399:hint 4 
+
+        '''
 
         if pile == 0 or pile == 1:
             if ((card > deck.upwardPile[pile][len(deck.upwardPile[pile]) - 1]) or (
@@ -112,7 +125,6 @@ class Env(object):
 
                 deck.upwardPile[pile].append(card)
                 player.hand[player.hand.index(card)] = -1
-
                 score += 1
 
         if pile == 2 or pile == 3:
@@ -143,6 +155,9 @@ class Env(object):
         self.agents = agents
 
 
+
+
+
     def run(self, is_training=False):
         '''
         Run a complete game, either for evaluation or training RL agent.
@@ -155,6 +170,24 @@ class Env(object):
         Note: The trajectories are 3-dimension list. The first dimension is for different players.
               The second dimension is for different transitions. The third dimension is for the contents of each
               transiton
+
+
+        STATE:
+        Player hand	            0:?                  1          2-98              99
+        First upward deck	    100: dont play here  101        102-198           199
+        First downward deck	    200: //              201        202-298           299
+        Second upward deck 	    300: //              301        302-398           399
+        Second downward deck 	400: //              401        402-498           499
+
+
+
+        ACTION:
+        0: pass, 		1:?, 		2->98: play card x on upward deck 1  		99: hint 1
+        100: ?, 		101:?,	    102->198:  downward deck 1  			    199: hint 2
+        200: ?,		    201:?,	    202-> 298: up deck 2 					    299: hint 3
+        300: ?,		    301:?,	    302->398: down deck 					    399:hint 4
+
+
         '''
 
         trajectories = [[] for _ in range(self.player_num)]
@@ -164,12 +197,14 @@ class Env(object):
         trajectories[player_id].append(state)
         score = 0
         while not self.is_over():
-            # Agent plays
-            if not is_training:
 
+
+            if not is_training:
                 action, _ = self.agents[player_id].eval_step(state, self._get_legal_actions())
             else:
                 action = self.agents[player_id].step(state, self._get_legal_actions())
+
+
 
             # Environment steps
             next_state, next_player_id, payoff = self.step(action)
@@ -181,6 +216,8 @@ class Env(object):
 
             # Set the state and player
             state = next_state
+
+
             player_id = next_player_id
             #print("CURRENT STATE =  player_id: {} , {}".format(
             #    self.current_state["player"].id, next_state ))
@@ -202,6 +239,7 @@ class Env(object):
 
         return trajectories, payoffs
 
+
     def is_over(self):
         ''' Check whether the curent game is over
         Returns:
@@ -213,6 +251,7 @@ class Env(object):
         if player.can_play(deck):
             return False
         else:
+            #print("Deck is empty: {}".format(deck.is_deck_empty()))
             return True
 
     def get_player_id(self):
@@ -264,7 +303,7 @@ class Env(object):
         deck = self.current_state["deck"]
         state = {'player': player, 'deck': deck, 'others':None}
 
-        if  self.state_shape!=[5,100]:
+        if self.strategy=="ideal":
             state['others'] = [p for p in self.players if p != self.players[player_id]]
 
         return self._extract_state(state)
@@ -295,10 +334,7 @@ class Env(object):
 
         deck = Deck()
         deck.shuffle()
-        # deck.cards = [94, 76, 92, 40, 99, 7, 13, 6, 10, 22, 27, 34, 38, 17, 57, 60, 97, 33, 30, 65, 66, 68, 48, 25,
-        # 15, 84, 74, 62, 64, 36, 58, 51, 79, 77, 78, 4, 71, 91, 96, 14, 75, 18, 98, 59, 85, 56, 67, 55, 2, 44, 69,
-        # 31, 45, 3, 41, 24, 53, 49, 73, 82, 81, 87, 20, 72, 70, 83, 37, 93, 88, 54, 23, 8, 52, 89, 32, 63, 80, 43,
-        # 29, 86, 42, 39, 35, 95, 47, 26, 16, 28, 46, 21, 12, 5, 9, 61, 19, 11, 90, 50]
+
 
         # name = names.get_first_name()
 
@@ -308,17 +344,17 @@ class Env(object):
         for p in self.players:
             p.draw_hand(deck, self.player_num)
 
-        first_player = self.players[random.randint(0, self.player_num - 1)]
+        self.active_player = self.players[random.randint(0, self.player_num - 1)]
         if self.state_shape == [5,100]:
-            state = {'player': first_player, 'deck': deck,'others': None}
+            state = {'player': self.active_player, 'deck': deck,'others': None}
         else:
-            state = {'player': first_player, 'deck': deck,'others': [p for p in self.players if p != first_player]}
+            state = {'player': self.active_player, 'deck': deck,'others': [p for p in self.players if p != self.active_player]}
 
         self.current_state = state
 
         if self.record_action:
             self.action_recorder = []
-        return self._extract_state(self.current_state), first_player.id
+        return self._extract_state(self.current_state), self.active_player.id
 
     def _load_model(self):
         ''' Load pretrained/rule model
@@ -358,7 +394,7 @@ class Env(object):
             if index != -1:
                 state[4][index] = 1
 
-        if others!= None:
+        if self.strategy=="ideal":
             i=0
             for p in others:
                 for index in p.hand:
@@ -380,9 +416,8 @@ class Env(object):
         Note: Must be implemented in the child class.
         '''
 
-        player = self.current_state["player"]
-
         deck = self.current_state["deck"]
+        player =self.current_state["player"]
 
         legal = []
         if player.num_played_cards >= 2 or (deck.is_deck_empty() == True and player.num_played_cards == 1):
@@ -391,18 +426,18 @@ class Env(object):
 
         for index, card in enumerate(player.hand):
             if (card > deck.upwardPile[0][len(deck.upwardPile[0]) - 1] or card == deck.upwardPile[0][len(deck.upwardPile[0]) - 1] - 10) and card != -1:
-                legal.append(card * 4)
+                legal.append(card)
             if ((card > deck.upwardPile[1][len(deck.upwardPile[1]) - 1]) or (
                     card == deck.upwardPile[1][len(deck.upwardPile[1]) - 1] - 10)) and card != -1:
-                legal.append(card * 4 + 1)
+                legal.append(card + 100)
 
             if ((card < deck.downwardPile[0][len(deck.downwardPile[0]) - 1]) or (
                     card == deck.downwardPile[0][len(deck.downwardPile[0]) - 1] + 10)) and card != -1:
-                legal.append(card * 4 + 2)
+                legal.append(card + 200)
 
             if ((card < deck.downwardPile[1][len(deck.downwardPile[1]) - 1]) or (
                     card == deck.downwardPile[1][len(deck.downwardPile[1]) - 1] + 10)) and card != -1:
-                legal.append(card * 4 + 3)
+                legal.append(card + 300)
 
         return legal
 
