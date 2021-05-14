@@ -119,37 +119,25 @@ performance=[]
 
 #Load model
 
-#saver = tf.train.import_meta_graph('models/theGame_'+str(strategy)+'_dqn_'+str(player_num)+'P_'+'Apr_30_2021'+'/models.data-00000-of-00001')
-#saver.restore(sess, tf.train.latest_checkpoint('./models/theGame_'+str(strategy)+'_dqn_'+str(player_num)+'P_'+'Apr_30_2021'))
+for episode in range(2000):
 
-for episode in range(episode_num):
-    #print("episode {}".format(episode))
-    # Generate data from the environment
+    performance, best_performance, num_pass = tournament(eval_env, evaluate_num)
+    logger.log_performance(episode, performance[0])
+    writer = csv.DictWriter(fpass, fieldnames=  ['episode', 'number of pass'])
 
-    # Evaluate the performance. Play with random agents.
-    print("here")
+    writer.writerow({'episode': episode, 'number of pass': num_pass})
+    print("Average number passes:{}".format(num_pass) )
 
-    if episode % evaluate_every == 0:
-        print("now here")
+    writer = csv.DictWriter(f_highest_performace, fieldnames=  ['episode', 'highest performance'])
 
-        performance, best_performance, num_pass = tournament(eval_env, evaluate_num)
-
-        logger.log_performance(episode, performance[0])
-        writer = csv.DictWriter(fpass, fieldnames=  ['episode', 'number of pass'])
-
-        writer.writerow({'episode': episode, 'number of pass': num_pass})
-        print("Average number passes:{}".format(num_pass) )
-
-        writer = csv.DictWriter(f_highest_performace, fieldnames=  ['episode', 'highest performance'])
-
-        writer.writerow({'episode': episode, 'highest performance': best_performance})
-        print("Highest performance:{}".format(best_performance) )
+    writer.writerow({'episode': episode, 'highest performance': best_performance})
+    print("Highest performance:{}".format(best_performance) )
 
 
 
 
 
-# Close files in the logger
+# Close files in the loggerf
 logger.close_files()
 fpass.close()
 f_highest_performace.close()

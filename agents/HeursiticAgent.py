@@ -17,14 +17,14 @@ class HeuristicAgent(object):
         for index, pile in enumerate(deck.upwardPile):
 
             for card in pCards:
-                if card != -1 and (card > pile[len(pile)-1] or card == pile[len(pile)-1]):
+                if card != -1 and (card > pile[len(pile)-1] or card == pile[len(pile)-1]-10):
                     current = card
                     if current < smallest[index] :
                         smallest[index] = current
 
         for index, pile in enumerate(deck.downwardPile):
             for card in pCards:
-                if card != -1 and (card < pile[len(pile)-1] or card == pile[len(pile)-1]):
+                if card != -1 and (card < pile[len(pile)-1] or card == pile[len(pile)-1]+10):
                     current = card
                     if current > smallest[2 + index]:
                         smallest[2 + index] = current
@@ -49,7 +49,6 @@ class HeuristicAgent(object):
         deck = obs["deck"]
 
         hand = obs["player"].hand
-
         if 0 in legal_actions:
             return 0
         else:
@@ -59,7 +58,7 @@ class HeuristicAgent(object):
             action = (pile_n*100)+card
             return action
 
-    def eval_step(self, state,legal_actions):
+    def eval_step(self, obs,legal_actions):
         ''' Predict the action given the current state for evaluation.
             Since the random agents are not trained. This function is equivalent to step function
         Args:
@@ -71,4 +70,4 @@ class HeuristicAgent(object):
         probs = [0 for _ in range(self.action_num)]
         for i in legal_actions:
             probs[i] = 1/len(legal_actions)
-        return self.step(state,legal_actions), probs
+        return self.step(obs,legal_actions), probs

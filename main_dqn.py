@@ -72,7 +72,7 @@ eval_env = Env(_config)
 
 # Set the iterations numbers and how frequently we evaluate the performance
 evaluate_every = 100
-evaluate_num = 1000
+evaluate_num = 100
 episode_num = 200000
 
 # The intial memory size
@@ -104,11 +104,11 @@ with tf.compat.v1.Session() as sess:
 
         agent = DQNAgent(sess,
                          scope='dqn'+str(i),
-                         number_actions=env.number_actions,
+                         action_num=env.number_actions,
                          replay_memory_init_size=memory_init_size,
                          train_every=train_every,
                          state_shape=env.state_shape,
-                         mlp_layers=[512, 512])
+                         mlp_layers=[512, 512, 512])
 
         agents.append(agent)
 
@@ -129,8 +129,8 @@ with tf.compat.v1.Session() as sess:
 
     #Load model
 
-    #saver = tf.train.import_meta_graph('models/theGame_'+str(strategy)+'_dqn_'+str(player_num)+'P_'+'Apr_30_2021'+'/models.data-00000-of-00001')
-    #saver.restore(sess, tf.train.latest_checkpoint('./models/theGame_'+str(strategy)+'_dqn_'+str(player_num)+'P_'+'Apr_30_2021'))
+    #saver = tf.train.import_meta_graph('models/theGame_'+str(strategy)+'_dqn_'+str(player_num)+'P_'+'May_09_2021'+'/models.data-00000-of-00001')
+    #saver.restore(sess, tf.train.latest_checkpoint('./models/theGame_'+str(strategy)+'_dqn_'+str(player_num)+'P_'+'May_09_2021'))
 
     for episode in range(episode_num):
         #print("episode {}".format(episode))
@@ -161,25 +161,16 @@ with tf.compat.v1.Session() as sess:
             writer.writerow({'episode': episode, 'highest performance': best_performance})
             print("Highest performance:{}".format(best_performance) )
 
-
-
-
-
     # Close files in the logger
     logger.close_files()
     fpass.close()
     f_highest_performace.close()
 
-
-
     # Plot the learning curve
     logger.plot('DQN')
 
-
-
-
     # Save model
-    save_dir = './models/theGame_'+str(strategy)+'_dqn_'+str(player_num)+'P_'+str(d)
+    save_dir = './models/theGame_'+str(strategy)+'_dqn_2cardrule'+str(player_num)+'P_'+str(d)
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     saver = tf.train.Saver()

@@ -42,7 +42,7 @@ class DQNAgent(object):
                  epsilon_end=0.1,
                  epsilon_decay_steps=20000,
                  batch_size=32,
-                 number_actions=400,
+                 action_num=400,
                  state_shape= None,
                  train_every=1,
                  mlp_layers=None,
@@ -67,7 +67,7 @@ class DQNAgent(object):
             epsilon_decay_steps (int): Number of steps to decay epsilon over
             batch_size (int): Size of batches to sample from the replay memory
             evaluate_every (int): Evaluate every N steps
-            number_actions (int): The number of the actions
+            action_num (int): The number of the actions
             state_space (list): The space of the state vector
             train_every (int): Train the network every X steps.
             mlp_layers (list): The layer number and the dimension of each layer in MLP
@@ -81,7 +81,7 @@ class DQNAgent(object):
         self.discount_factor = discount_factor
         self.epsilon_decay_steps = epsilon_decay_steps
         self.batch_size = batch_size
-        self.number_actions = number_actions
+        self.action_num = action_num
         self.train_every = train_every
         # Total timesteps
         self.total_t = 0
@@ -92,8 +92,8 @@ class DQNAgent(object):
         self.epsilons = np.linspace(epsilon_start, epsilon_end, epsilon_decay_steps)
 
         # Create estimators
-        self.q_estimator = Estimator(scope=self.scope+"_q", number_actions=number_actions, learning_rate=learning_rate, state_shape=state_shape, mlp_layers=mlp_layers)
-        self.target_estimator = Estimator(scope=self.scope+"_target_q", number_actions=number_actions, learning_rate=learning_rate, state_shape=state_shape, mlp_layers=mlp_layers)
+        self.q_estimator = Estimator(scope=self.scope+"_q", action_num=action_num, learning_rate=learning_rate, state_shape=state_shape, mlp_layers=mlp_layers)
+        self.target_estimator = Estimator(scope=self.scope+"_target_q", action_num=action_num, learning_rate=learning_rate, state_shape=state_shape, mlp_layers=mlp_layers)
 
 
         # Create replay memory
@@ -149,7 +149,7 @@ class DQNAgent(object):
             q_values (numpy.array): a 1-d array where each entry represents a Q value
         '''
         epsilon = self.epsilons[min(self.total_t, self.epsilon_decay_steps-1)]
-        A = np.ones(self.number_actions, dtype=float) * epsilon / self.number_actions
+        A = np.ones(self.action_num, dtype=float) * epsilon / self.action_num
         q_values = self.q_estimator.predict(self.sess, np.expand_dims(state, 0))[0]
         best_action = np.argmax(q_values)
         A[best_action] += (1.0 - epsilon)
@@ -172,7 +172,7 @@ class DQNAgent(object):
         # Perform gradient descent update
         state_batch = np.array(state_batch)
         loss = self.q_estimator.update(self.sess, state_batch, action_batch, target_batch)
-        #print('\rINFO - Agent {}, step {}, rl-loss: {}'.format(self.scope, self.total_t, loss), end='')
+        print('\rINFO - Agent {}, step {}, rl-loss: {}'.format(self.scope, self.total_t, loss), end='')
 
 
         # Update the target estimator
@@ -210,14 +210,14 @@ class Estimator():
         This network is used for both the Q-Network and the Target Network.
     '''
 
-    def __init__(self, scope, number_actions, learning_rate, state_shape, mlp_layers):
+    def __init__(self, scope, action_num, learning_rate, state_shape, mlp_layers):
         ''' Initilalize an Estimator object.
         Args:
-            number_actions (int): the number output actions
+            action_num (int): the number output actions
             state_shap (list): the shape of the state space
         '''
         self.scope = scope
-        self.number_actions = number_actions
+        self.action_num = action_num
         self.learning_rate=learning_rate
         self.state_shape = state_shape if isinstance(state_shape, list) else [state_shape]
         self.mlp_layers = map(int, mlp_layers)
@@ -258,7 +258,7 @@ class Estimator():
         for dim in self.mlp_layers:
             fc = tf.contrib.layers.fully_connected(fc, dim, activation_fn=tf.tanh)
 
-        self.predictions = tf.contrib.layers.fully_connected(fc, self.number_actions, activation_fn=None)
+        self.predictions = tf.contrib.layers.fully_connected(fc, self.action_num, activation_fn=None)
 
         # Get the predictions for the chosen actions only
         gather_indices = tf.range(batch_size) * tf.shape(input=self.predictions)[1] + self.actions_pl
@@ -359,7 +359,7 @@ def copy_model_parameters(sess, estimator1, estimator2):
 #    with tf.Session() as sess:
 #        agent = DQNAgent(sess,
 #                         scope='dqn',
-#                         number_actions=4,
+#                         action_num=4,
 #                         replay_memory_init_size=100,
 #                         norm_step=100,
 #                         state_shape=[2],
