@@ -1,7 +1,7 @@
 """
 Copyright (c) 2019 DATA Lab at Texas A&M University
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+Permission is hereby granteds, free of charge, to any person obtaining a copy of this software and associated
 documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
 rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
 and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
@@ -20,7 +20,7 @@ from rlcard.utils import *
 from game.Player import Player
 from game.Deck import Deck
 import random
-from agents.DQNAgent import DQNAgent
+
 
 
 class Env(object):
@@ -72,7 +72,7 @@ class Env(object):
         self.state_shape = config['state_shape']
         self.number_actions = config['number_actions']
         self.obs = {}
-        self.agents: [DQNAgent]
+        self.agents: []
         if self.record_action:
             self.action_recorder = []
         self.strategy= config['strategy']
@@ -110,15 +110,15 @@ class Env(object):
 
         if action == 0:
 
-            while player.num_played_cards!=0 and not deck.is_deck_empty():
-                for i in range(len(player.hand)):
-                    if player.hand[i]== -1:
-                        player.hand[i] = player.draw_card(deck)
-                        player.num_played_cards = player.num_played_cards - 1
-            next_player = self.players[(player.id + 1) % len(self.players)]
+            while player.num_played_cards!=0 :
+                if not deck.is_deck_empty():
+                    for i in range(len(player.hand)):
+                        if player.hand[i]== -1:
+                            player.hand[i] = player.draw_card(deck)
+                player.num_played_cards = player.num_played_cards - 1
 
-            #if player.num_played_cards <=2:
-            #    score = 1
+
+            next_player = self.players[(player.id + 1) % len(self.players)]
 
 
             next_obs = {"player": next_player, "deck": deck, "others": np.delete(self.players,next_player.id)}
@@ -171,7 +171,7 @@ class Env(object):
         self.obs = next_obs
         return self._extract_state(self.obs), self.current_player.id, score
 
-    def set_agents(self, agents: [DQNAgent]):
+    def set_agents(self, agents):
         '''
         Set the agents that will interact with the environment.
         This function must be called before `run`.
@@ -218,6 +218,22 @@ class Env(object):
         Note: The trajectories are 3-dimension list. The first dimension is for different players.
               The second dimension is for different transitions. The third dimension is for the contents of each
               transiton
+        STATE:
+            Upward pile 1	    0: dont play here          1:?         2-98: cards
+            Upward pile 2	    100: don't play here       101:?       102-298:cards
+            Downward pile 1 	200: don't play here       201:?       202-298:cards
+            Downward pile 2	    300: don't play here       301:?       302-398:cards
+            Player hand	        400:?                      401:?       402-498
+
+
+
+            ACTION:
+            0: pass, 		 1:  H1, 		  2->98:  play card x on upward deck 1
+            100: ?, 		101: H2,	    102->198: downward deck 1
+            200: ?,		    201: H3,	    202->298: up deck 2
+            300: ?,		    301: H4,	    302->398: down deck
+
+
         '''
 
         trajectories = [[] for _ in range(self.player_num)]
@@ -227,31 +243,14 @@ class Env(object):
         trajectories[player_id].append(state)
         score = 0
         while not self.is_over():
+
             # Agent plays
-            if self.player_num>1:
+            if self.player_num>1 and self.strategy == 'informative':
                 coplayers = np.delete(self.players,self.current_player.id)
                 hints= self.get_hints(coplayers)
 
                 for h in hints:
                     state[h][0]=1
-
-
-            '''STATE: 
-            Upward pile 1	    0: dont play here          1:?         2-98: cards          
-            Upward pile 2	    100: don't play here       101:?       102-298:cards       
-            Downward pile 1 	200: don't play here       201:?       202-298:cards        
-            Downward pile 2	    300: don't play here       301:?       302-398:cards        
-            Player hand	        400:?                      401:?       402-498                            
-
-            
-            
-            ACTION:
-            0: pass, 		 1:  H1, 		  2->98:  play card x on upward deck 1  		
-            100: ?, 		101: H2,	    102->198: downward deck 1  			    
-            200: ?,		    201: H3,	    202->298: up deck 2 					    
-            300: ?,		    301: H4,	    302->398: down deck 					   
-
-            '''
 
             if not is_training:
                 action, _ = self.agents[player_id].eval_step(state, self._get_legal_actions())
@@ -266,7 +265,6 @@ class Env(object):
             # Save action
             trajectories[player_id].append(action)
 
-
             # Set the state and player
             state = next_state
             player_id = next_player_id
@@ -274,6 +272,8 @@ class Env(object):
 
             if not self.is_over():
                 trajectories[player_id].append(state)
+
+
 
         # Add a final state to all the players
         for player_id in range(self.player_num):
@@ -285,8 +285,6 @@ class Env(object):
 
         # Reorganize the trajectories
         trajectories = reorganize(trajectories, payoffs)
-
-
 
         return trajectories, payoffs
 
@@ -464,20 +462,22 @@ class Env(object):
         if player.num_played_cards >= 2 or (deck.is_deck_empty() == True and player.num_played_cards == 1):
             legal.append(0)
 
-        for index, card in enumerate(player.hand):
-            if (card > deck.upwardPile[0][len(deck.upwardPile[0]) - 1] or card == deck.upwardPile[0][len(deck.upwardPile[0]) - 1] - 10) and card != -1:
-                legal.append(card)
-            if ((card > deck.upwardPile[1][len(deck.upwardPile[1]) - 1]) or (
-                    card == deck.upwardPile[1][len(deck.upwardPile[1]) - 1] - 10)) and card != -1:
-                legal.append(card + 100)
+        else:
 
-            if ((card < deck.downwardPile[0][len(deck.downwardPile[0]) - 1]) or (
-                    card == deck.downwardPile[0][len(deck.downwardPile[0]) - 1] + 10)) and card != -1:
-                legal.append(card + 200)
+            for index, card in enumerate(player.hand):
+                if (card > deck.upwardPile[0][len(deck.upwardPile[0]) - 1] or card == deck.upwardPile[0][len(deck.upwardPile[0]) - 1] - 10) and card != -1:
+                    legal.append(card)
+                if ((card > deck.upwardPile[1][len(deck.upwardPile[1]) - 1]) or (
+                        card == deck.upwardPile[1][len(deck.upwardPile[1]) - 1] - 10)) and card != -1:
+                    legal.append(card + 100)
 
-            if ((card < deck.downwardPile[1][len(deck.downwardPile[1]) - 1]) or (
-                    card == deck.downwardPile[1][len(deck.downwardPile[1]) - 1] + 10)) and card != -1:
-                legal.append(card + 300)
+                if ((card < deck.downwardPile[0][len(deck.downwardPile[0]) - 1]) or (
+                        card == deck.downwardPile[0][len(deck.downwardPile[0]) - 1] + 10)) and card != -1:
+                    legal.append(card + 200)
+
+                if ((card < deck.downwardPile[1][len(deck.downwardPile[1]) - 1]) or (
+                        card == deck.downwardPile[1][len(deck.downwardPile[1]) - 1] + 10)) and card != -1:
+                    legal.append(card + 300)
 
         return legal
 
