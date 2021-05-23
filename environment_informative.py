@@ -16,7 +16,7 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR TH
 
 """
 
-from rlcard.utils import *
+from utils import *
 from game.Player import Player
 from game.Deck import Deck
 import random
@@ -71,12 +71,13 @@ class Env(object):
         self.player_num = config['player_num']
         self.state_shape = config['state_shape']
         self.number_actions = config['number_actions']
+        self.heuristic_communication = config['heuristic_communication']
         self.obs = {}
         self.agents: []
         if self.record_action:
             self.action_recorder = []
         self.strategy= config['strategy']
-
+        self.hints=[]
         self.timestep = 0
         # Set random seed, default is None
         self._seed(config['seed'])
@@ -108,27 +109,44 @@ class Env(object):
 
         score = 0
 
+        if action in [1,101,201,301]:
+            if len(self.hints)>=2:
+                self.hints=[]
+
+            self.hints.append(int(action /100) )
+
+            player.give_hint=False
+            next_player = self.players[(player.id + 1) % len(self.players)]
+            next_obs = {"player": next_player, "deck": deck, "others": np.delete(self.players, next_player.id)}
+            self.obs = next_obs
+
+            return self._extract_state(next_obs), next_player.id, score
+
         if action == 0:
 
-            while player.num_played_cards!=0 :
+
+            while player.num_played_cards!=0:
                 if not deck.is_deck_empty():
                     for i in range(len(player.hand)):
                         if player.hand[i]== -1:
                             player.hand[i] = player.draw_card(deck)
                 player.num_played_cards = player.num_played_cards - 1
+            if self.strategy=="informative":
+
+                player.give_hint=True
+
+                return self._extract_state(self.obs), self.current_player.id, score
+
+            else:
+
+                next_player = self.players[(player.id + 1) % len(self.players)]
 
 
-            next_player = self.players[(player.id + 1) % len(self.players)]
+                next_obs = {"player": next_player, "deck": deck, "others": np.delete(self.players,next_player.id)}
 
+                self.obs = next_obs
 
-            next_obs = {"player": next_player, "deck": deck, "others": np.delete(self.players,next_player.id)}
-
-            self.obs = next_obs
-            #print("PLAYER {} DID MOVE {}".format(player.id, action))
-
-            #print(self.obs)
-
-            return self._extract_state(next_obs), next_player.id, score
+                return self._extract_state(next_obs), next_player.id, score
 
 
         card = int(action % 100)
@@ -139,25 +157,24 @@ class Env(object):
             if ((card > deck.upwardPile[pile][len(deck.upwardPile[pile]) - 1]) or (
                     card == deck.upwardPile[pile][len(deck.upwardPile[pile]) - 1] - 10)) and card != -1:
 
-                #if (card == deck.upwardPile[pile][len(deck.upwardPile[pile]) - 1] - 10):
-                #    score = 1
-                #else:
-                #    score = 1 / abs(card - deck.upwardPile[pile][len(deck.upwardPile[pile]) - 1])
-                score=1
+                if (card == deck.upwardPile[pile][len(deck.upwardPile[pile]) - 1] - 10):
+                    score = 1
+                else:
+                    score = 1 / abs(card - deck.upwardPile[pile][len(deck.upwardPile[pile]) - 1])
+                #score=1
                 deck.upwardPile[pile].append(card)
                 player.hand[player.hand.index(card)] = -1
-
 
 
 
         if pile == 2 or pile == 3:
             if ((card < deck.downwardPile[pile - 2][len(deck.downwardPile[pile - 2]) - 1]) or (
                     card == deck.downwardPile[pile - 2][len(deck.downwardPile[pile - 2]) - 1] + 10)) and card != -1:
-                #if card == deck.downwardPile[pile - 2][len(deck.downwardPile[pile - 2]) - 1] + 10:
-                #    score = 1
-                #else:
-                #    score = 1 / abs(card - deck.downwardPile[pile - 2][len(deck.downwardPile[pile - 2])- 1])
-                score=1
+                if card == deck.downwardPile[pile - 2][len(deck.downwardPile[pile - 2]) - 1] + 10:
+                    score = 1
+                else:
+                    score = 1 / abs(card - deck.downwardPile[pile - 2][len(deck.downwardPile[pile - 2])- 1])
+                #score=1
                 deck.downwardPile[pile - 2].append(card)
                 player.hand[player.hand.index(card)] = -1
 
@@ -169,6 +186,8 @@ class Env(object):
 
         #print("PLAYER {} DID MOVE {}".format(player.id,action))
         self.obs = next_obs
+        #print("DECK: \n   UP: {} \n   DOWN: {}\n".format(deck.upwardPile,deck.downwardPile))
+        #print("CURRENT PLAYER {} \n   HAND :{}".format(player.id,player.hand))
         return self._extract_state(self.obs), self.current_player.id, score
 
     def set_agents(self, agents):
@@ -245,12 +264,24 @@ class Env(object):
         while not self.is_over():
 
             # Agent plays
-            if self.player_num>1 and self.strategy == 'informative':
-                coplayers = np.delete(self.players,self.current_player.id)
-                hints= self.get_hints(coplayers)
 
-                for h in hints:
-                    state[h][0]=1
+
+            if self.player_num>1 and self.strategy == 'h_informative' :
+
+                    coplayers = np.delete(self.players,self.current_player.id)
+                    self.hints= self.get_hints(coplayers)
+
+                    for h in self.hints:
+                        state[h][0]=1
+            if self.player_num>1 and self.strategy == 'informative' :
+                    if len(self.hints)>=1:
+                        for h in self.hints[-2:]:
+
+                            state[h][0]=1
+
+
+
+
 
             if not is_training:
                 action, _ = self.agents[player_id].eval_step(state, self._get_legal_actions())
@@ -258,12 +289,16 @@ class Env(object):
                 action = self.agents[player_id].step(state, self._get_legal_actions())
 
             # Environment steps
+            self.players[player_id].active=True
             next_state, next_player_id, payoff = self.step(action)
+            if payoff>0:
 
-            score += payoff
+                score += 1
+
 
             # Save action
             trajectories[player_id].append(action)
+            self.agents[player_id].payoffs.append(payoff)
 
             # Set the state and player
             state = next_state
@@ -286,7 +321,11 @@ class Env(object):
         # Reorganize the trajectories
         trajectories = reorganize(trajectories, payoffs)
 
+
+
+
         return trajectories, payoffs
+
 
 
     def is_over(self):
@@ -297,10 +336,15 @@ class Env(object):
 
         player = self.obs["player"]
         deck = self.obs["deck"]
-        if player.can_play(deck):
+        if player.can_play(deck) or (player.num_played_cards>=2 and deck.is_deck_empty()==False) or (player.num_played_cards>=1 and deck.is_deck_empty()==True):
             return False
         else:
-            #print("Deck is empty: {}".format(deck.is_deck_empty()))
+
+            #for p in self.players:
+            #    print("PLAYER: {}, HAND: {}".format(p.id,p.hand))
+
+            #print("**********GAME OVER***********")
+
             return True
 
     def get_player_id(self):
@@ -459,11 +503,24 @@ class Env(object):
         player =self.obs["player"]
 
         legal = []
+
+
+        if player.give_hint==True:
+            legal = [1,101,201,301]
+
+            return legal
+
+        if player.num_played_cards == 5:
+            legal.append(0)
+
+            return legal
+
+
         if player.num_played_cards >= 2 or (deck.is_deck_empty() == True and player.num_played_cards == 1):
             legal.append(0)
 
-        else:
 
+        else:
             for index, card in enumerate(player.hand):
                 if (card > deck.upwardPile[0][len(deck.upwardPile[0]) - 1] or card == deck.upwardPile[0][len(deck.upwardPile[0]) - 1] - 10) and card != -1:
                     legal.append(card)

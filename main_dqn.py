@@ -50,30 +50,25 @@ _config['seed']=0
 _config['active_player']= 0
 _config['player_num']= player_num
 
-if strategy == "non-communicative":
-    _config['strategy']="non-communicative"
-    _config['state_shape']= [5,100]
 
 if strategy=="ideal":
-    _config['strategy']="ideal"
-
     _config['state_shape']= [4+player_num,100]
-
-if strategy =="informative":
-    _config['strategy']="informative"
+else:
     _config['state_shape']= [5,100]
+
+_config['strategy']=strategy # POSSIBLE STRATEGY TYPES: H_INFORMATIVE,  INFORMATIVE, IDEAL, NONE
 
 _config['number_actions']=400
 _config['record_action']=True
-
+_config['heuristic_communication']=False
 
 env = Env(_config)
 eval_env = Env(_config)
 
 # Set the iterations numbers and how frequently we evaluate the performance
 evaluate_every = 100
-evaluate_num = 100
-episode_num = 200000
+evaluate_num = 1000
+episode_num = 100000
 
 # The intial memory size
 memory_init_size = 1000
@@ -108,7 +103,7 @@ with tf.compat.v1.Session() as sess:
                          replay_memory_init_size=memory_init_size,
                          train_every=train_every,
                          state_shape=env.state_shape,
-                         mlp_layers=[512, 512, 512])
+                         mlp_layers=[512, 512])
 
         agents.append(agent)
 
@@ -123,43 +118,47 @@ with tf.compat.v1.Session() as sess:
     # Init a Logger to plot the learning curve
     logger = Logger(log_dir)
     fpass  = open('passcount.csv', 'w', newline='')
-    f_highest_performace  = open('highestperformance.csv', 'w', newline='')
+    f_highest_performace  = open('highestperformance2.csv', 'w', newline='')
     performance=[]
 
 
     #Load model
 
-    #saver = tf.train.import_meta_graph('models/theGame_'+str(strategy)+'_dqn_'+str(player_num)+'P_'+'May_09_2021'+'/models.data-00000-of-00001')
-    #saver.restore(sess, tf.train.latest_checkpoint('./models/theGame_'+str(strategy)+'_dqn_'+str(player_num)+'P_'+'May_09_2021'))
+    #saver = tf.train.import_meta_graph('models/theGame_'+str(strategy)+'_dqn_2cardrule'+str(player_num)+'P_'+'May_16_2021'+'/models.data-00000-of-00001')
+    #saver.restore(sess, tf.train.latest_checkpoint('./models/theGame_'+str(strategy)+'_dqn_2cardrule'+str(player_num)+'P_'+'May_16_2021'))
 
     for episode in range(episode_num):
-        #print("episode {}".format(episode))
-        # Generate data from the environment
-        trajectories, _ = env.run(is_training=True)
+        for i in agents:
+            i.p_counter=0
+            i.payoffs=[]
+
+        trajectories, payoffs= env.run(is_training=True)
+
+
 
 
         # Feed transitions into agent memory, and train the agent
 
         for i in range(env.player_num):
-            for ts in trajectories[i]:
-                agents[i].feed(ts)
+                for ts in trajectories[i]:
 
-        # Evaluate the performance. Play with random agents.
+                    agents[i].feed(ts)
+            # Evaluate the performance.
 
         if episode % evaluate_every == 0:
             performance, best_performance, num_pass = tournament(eval_env, evaluate_num)
 
 
             logger.log_performance(episode, performance[0])
-            writer = csv.DictWriter(fpass, fieldnames=  ['episode', 'number of pass'])
+            writer = csv.DictWriter(fpass, fieldnames= ['episode', 'number of pass'])
 
             writer.writerow({'episode': episode, 'number of pass': num_pass})
-            print("Average number passes:{}".format(num_pass) )
+            #print("Average number passes:{}".format(num_pass) )
 
             writer = csv.DictWriter(f_highest_performace, fieldnames=  ['episode', 'highest performance'])
 
             writer.writerow({'episode': episode, 'highest performance': best_performance})
-            print("Highest performance:{}".format(best_performance) )
+            #print("Highest performance:{}".format(best_performance) )
 
     # Close files in the logger
     logger.close_files()

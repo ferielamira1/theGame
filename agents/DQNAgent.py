@@ -41,7 +41,7 @@ class DQNAgent(object):
                  epsilon_start=1.0,
                  epsilon_end=0.1,
                  epsilon_decay_steps=20000,
-                 batch_size=32,
+                 batch_size=64,
                  action_num=400,
                  state_shape= None,
                  train_every=1,
@@ -88,6 +88,9 @@ class DQNAgent(object):
         # Total training step
         self.train_t = 0
 
+        self.payoffs=[]
+        self.p_counter=0
+
         # The epsilon decay scheduler
         self.epsilons = np.linspace(epsilon_start, epsilon_end, epsilon_decay_steps)
 
@@ -107,6 +110,13 @@ class DQNAgent(object):
             ts (list): a list of 5 elements that represent the transition
         '''
         (state, action, reward, next_state, done) = tuple(ts)
+        #if self.p_counter!=0 and len(self.payoffs)<self.p_counter:
+        reward=self.payoffs[self.p_counter]
+
+        self.p_counter+=1
+
+
+
         self.feed_memory(state, action, reward, next_state, done)
         self.total_t += 1
         tmp = self.total_t - self.replay_memory_init_size
@@ -172,7 +182,7 @@ class DQNAgent(object):
         # Perform gradient descent update
         state_batch = np.array(state_batch)
         loss = self.q_estimator.update(self.sess, state_batch, action_batch, target_batch)
-        print('\rINFO - Agent {}, step {}, rl-loss: {}'.format(self.scope, self.total_t, loss), end='')
+        #print('\rINFO - Agent {}, step {}, rl-loss: {}'.format(self.scope, self.total_t, loss), end='')
 
 
         # Update the target estimator
