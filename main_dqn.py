@@ -22,7 +22,7 @@ import os
 
 from agents.DQNAgent import DQNAgent
 from rlcard.envs.registration import DEFAULT_CONFIG
-from rlcard.utils import tournament, set_global_seed
+from utils import tournament, set_global_seed
 from rlcard.utils import Logger
 
 from environment_informative import Env
