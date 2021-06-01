@@ -16,7 +16,7 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR TH
 
 """
 
-from utils import *
+from rlcard.utils import *
 from game.Player import Player
 from game.Deck import Deck
 import random
@@ -276,12 +276,7 @@ class Env(object):
             if self.player_num>1 and self.strategy == 'informative' :
                     if len(self.hints)>=1:
                         for h in self.hints[-2:]:
-
                             state[h][0]=1
-
-
-
-
 
             if not is_training:
                 action, _ = self.agents[player_id].eval_step(state, self._get_legal_actions())
@@ -292,7 +287,6 @@ class Env(object):
             self.players[player_id].active=True
             next_state, next_player_id, payoff = self.step(action)
             if payoff>0:
-
                 score += 1
 
 
