@@ -22,7 +22,8 @@ import os
 
 from agents.DQNAgent import DQNAgent
 from rlcard.envs.registration import DEFAULT_CONFIG
-from utils import tournament, set_global_seed
+from rlcard.utils import tournament
+from rlcard.utils  import set_global_seed
 from rlcard.utils import Logger
 
 from environment_informative import Env
@@ -124,8 +125,8 @@ with tf.compat.v1.Session() as sess:
 
     #Load model
 
-    #saver = tf.train.import_meta_graph('models/theGame_'+str(strategy)+'_dqn_2cardrule'+str(player_num)+'P_'+'May_16_2021'+'/models.data-00000-of-00001')
-    #saver.restore(sess, tf.train.latest_checkpoint('./models/theGame_'+str(strategy)+'_dqn_2cardrule'+str(player_num)+'P_'+'May_16_2021'))
+    #saver = tf.train.import_meta_graph('models/theGame_'+str(strategy)+'_dqn_2cardrule_1step_'+str(player_num)+'P_'+'May_23_2021'+'/models.data-00000-of-00001')
+    #saver.restore(sess, tf.train.latest_checkpoint('./models/theGame_'+str(strategy)+'_dqn_2cardrule_1step_'+str(player_num)+'P_'+'May_23_2021'))
 
     for episode in range(episode_num):
         for i in agents:
@@ -146,18 +147,18 @@ with tf.compat.v1.Session() as sess:
             # Evaluate the performance.
 
         if episode % evaluate_every == 0:
-            performance, best_performance, num_pass = tournament(eval_env, evaluate_num)
+            performance = tournament(eval_env, evaluate_num)
 
 
             logger.log_performance(episode, performance[0])
-            writer = csv.DictWriter(fpass, fieldnames= ['episode', 'number of pass'])
+            #writer = csv.DictWriter(fpass, fieldnames= ['episode', 'number of pass'])
 
-            writer.writerow({'episode': episode, 'number of pass': num_pass})
+            #writer.writerow({'episode': episode, 'number of pass': num_pass})
             #print("Average number passes:{}".format(num_pass) )
 
-            writer = csv.DictWriter(f_highest_performace, fieldnames=  ['episode', 'highest performance'])
+            #writer = csv.DictWriter(f_highest_performace, fieldnames=  ['episode', 'highest performance'])
 
-            writer.writerow({'episode': episode, 'highest performance': best_performance})
+            #writer.writerow({'episode': episode, 'highest performance': best_performance})
             #print("Highest performance:{}".format(best_performance) )
 
     # Close files in the logger

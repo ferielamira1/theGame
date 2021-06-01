@@ -22,7 +22,7 @@ import os
 
 from agents.NFSPAgent import NFSPAgent
 from agents.RandAgent import RandomAgent
-from utils import set_global_seed, tournament
+from rlcard.utils import set_global_seed, tournament
 from rlcard.utils import Logger
 from environment_informative import Env
 from rlcard.envs.registration import DEFAULT_CONFIG
@@ -129,7 +129,7 @@ with tf.Session() as sess:
 
         # Evaluate the performance. Play with random agents.
         if episode % evaluate_every == 0:
-            performance, best_performance, num_pass = tournament(eval_env, evaluate_num)
+            performance = tournament(eval_env, evaluate_num)
 
             logger.log_performance(episode, performance[0])
     # Close files in the logger
