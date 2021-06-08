@@ -111,7 +111,7 @@ class DQNAgent(object):
         '''
         (state, action, reward, next_state, done) = tuple(ts)
         #if self.p_counter!=0 and len(self.payoffs)<self.p_counter:
-        reward=self.payoffs[self.p_counter]
+        #reward=self.payoffs[self.p_counter]
 
         self.p_counter+=1
 
