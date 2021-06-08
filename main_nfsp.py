@@ -76,7 +76,7 @@ episode_num = 10
 memory_init_size = 1000
 
 # Train the agent every X steps
-train_every = 1git
+train_every = 1
 
 log_dir = './experiments/theGame_nfsp_result/'
 
