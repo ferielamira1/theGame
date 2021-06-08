@@ -22,7 +22,7 @@ import os
 
 from agents.NFSPAgent import NFSPAgent
 from agents.RandAgent import RandomAgent
-from rlcard.utils import set_global_seed, tournament
+from utils import set_global_seed, tournament
 from rlcard.utils import Logger
 from environment import Env
 from rlcard.envs.registration import DEFAULT_CONFIG
