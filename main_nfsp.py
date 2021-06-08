@@ -70,7 +70,7 @@ eval_env = Env(_config)
 # Set the iterations numbers and how frequently we evaluate the performance
 evaluate_every = 100
 evaluate_num = 1000
-episode_num = 10
+episode_num = 100000
 
 # The intial memory size
 memory_init_size = 1000
@@ -142,7 +142,7 @@ with tf.Session() as sess:
     # Save model
     today = date.today()
     d = today.strftime("%b_%d_%Y")
-    save_dir = 'models/nfsp/'+strategy+str(player_num)
+    save_dir = 'models/nfsp/'+strategy+str(player_num)+'P'+"2card"
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     saver = tf.train.Saver()
