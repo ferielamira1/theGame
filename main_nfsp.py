@@ -17,6 +17,8 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR TH
 """
 import sys
 from datetime import date
+import os
+os.environ["KMP_WARNINGS"] = 0
 
 import tensorflow as tf
 import os
@@ -27,7 +29,6 @@ from utils import set_global_seed, tournament
 from rlcard.utils import Logger
 from environment import Env
 from rlcard.envs.registration import DEFAULT_CONFIG
-
 
 
 
