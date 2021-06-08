@@ -69,7 +69,7 @@ eval_env = Env(_config)
 # Set the iterations numbers and how frequently we evaluate the performance
 evaluate_every = 100
 evaluate_num = 1000
-episode_num = 30000
+episode_num = 10
 
 # The intial memory size
 memory_init_size = 1000
