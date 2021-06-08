@@ -16,6 +16,7 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR TH
 
 """
 import sys
+from datetime import date
 
 import tensorflow as tf
 import os
@@ -75,7 +76,7 @@ episode_num = 10
 memory_init_size = 1000
 
 # Train the agent every X steps
-train_every = 1
+train_every = 1git
 
 log_dir = './experiments/theGame_nfsp_result/'
 
@@ -139,7 +140,9 @@ with tf.Session() as sess:
     #logger.plot('NFSP')
 
     # Save model
-    save_dir = 'models/theGame_nfsp'
+    today = date.today()
+    d = today.strftime("%b_%d_%Y")
+    save_dir = 'models/nfsp/'+strategy+str(player_num)
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     saver = tf.train.Saver()
