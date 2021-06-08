@@ -6,6 +6,8 @@ class Player(object):
         self.id = id
         self.num_played_cards = 0
         self.hand=[]
+        self.give_hint=False
+        self.payoffs=[]
 
 
     def draw_hand(self, deck, numberPlayers):
