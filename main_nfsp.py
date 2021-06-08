@@ -110,8 +110,8 @@ with tf.Session() as sess:
     # Init a Logger to plot the learning curvefrom rlcard.agents.random_agent import RandomAgent
 
     logger = Logger(log_dir)
-    saver = tf.train.import_meta_graph('./models/theGame_nfsp/model.data-00000-of-00001')
-    saver.restore(sess, tf.train.latest_checkpoint('./models/theGame_nfsp'))
+    #saver = tf.train.import_meta_graph('./models/theGame_nfsp/model.data-00000-of-00001')
+    #saver.restore(sess, tf.train.latest_checkpoint('./models/theGame_nfsp'))
 
     for episode in range(episode_num):
 
