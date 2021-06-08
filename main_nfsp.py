@@ -18,7 +18,7 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR TH
 import sys
 from datetime import date
 import os
-os.environ["KMP_WARNINGS"] = False
+os.environ["KMP_WARNINGS"] = "0"
 
 import tensorflow as tf
 import os
