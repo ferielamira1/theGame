@@ -24,7 +24,7 @@ from agents.NFSPAgent import NFSPAgent
 from agents.RandAgent import RandomAgent
 from rlcard.utils import set_global_seed, tournament
 from rlcard.utils import Logger
-from environment_informative import Env
+from environment import Env
 from rlcard.envs.registration import DEFAULT_CONFIG
 
 
@@ -69,7 +69,7 @@ eval_env = Env(_config)
 # Set the iterations numbers and how frequently we evaluate the performance
 evaluate_every = 100
 evaluate_num = 1000
-episode_num = 100000
+episode_num = 30000
 
 # The intial memory size
 memory_init_size = 1000
@@ -110,8 +110,8 @@ with tf.Session() as sess:
     # Init a Logger to plot the learning curvefrom rlcard.agents.random_agent import RandomAgent
 
     logger = Logger(log_dir)
-    #saver = tf.train.import_meta_graph('models/theGame_'+str(strategy)+'_dqn_2cardrule'+str(player_num)+'P_'+'May_16_2021'+'/models.data-00000-of-00001')
-    #saver.restore(sess, tf.train.latest_checkpoint('./models/theGame_'+str(strategy)+'_dqn_2cardrule'+str(player_num)+'P_'+'May_16_2021'))
+    saver = tf.train.import_meta_graph('./models/theGame_nfsp/model.data-00000-of-00001')
+    saver.restore(sess, tf.train.latest_checkpoint('./models/theGame_nfsp'))
 
     for episode in range(episode_num):
 
@@ -136,7 +136,7 @@ with tf.Session() as sess:
     logger.close_files()
 
     # Plot the learning curve
-    logger.plot('NFSP')
+    #logger.plot('NFSP')
 
     # Save model
     save_dir = 'models/theGame_nfsp'
