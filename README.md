@@ -1,6 +1,6 @@
 # theGame
 
-For the implementation, Python  3.7 with Tensorflow  1.15.4 were used. The code can be found on is based on the core of RLCard , which is a toolkit for reinforcement learning in card games. Three types of agents were integrated: random, heuristic and a DQN-agent. The two first models serve to evaluate the DQN algorithm. 
+For the implementation, Python  3.7 with Tensorflow  1.15.4 were used. The code is based on the core of RLCard , which is a toolkit for reinforcement learning in card games. Three types of agents were integrated: random, heuristic and a DQN-agent. The two first models serve to evaluate the DQN algorithm. 
 
 Our system structure is relatively simple. 
 - The "Game" folder contains a "Player "class, which contains information about the respective players and "Deck" class, which contains information about the common deck between all players. 
